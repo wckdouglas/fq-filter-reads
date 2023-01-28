@@ -72,6 +72,7 @@ fn get_list(id_file: &str) -> Result<HashSet<String>, String> {
         debug!("{}", id);
         id_set.insert(id);
     }
+    info!("Collected {} ids", id_set.len());
     Ok(id_set)
 }
 
