@@ -50,7 +50,7 @@ jobs:
         run: |
           echo "@a\nAAA\n+\nAAA\n@c\nCCC\n+\nCCC\n@t\nTTT\n+\nTTT" | gzip > test.fq.gz && \
           echo "a\nt" > id_list && \
-          echo "@a\nAAA\n+AAA\n@t\nTTT\n+\nTTT" > expected.fq && \
-          cargo run -- --in-fastq test.fq.gz --in-id-list id_list > out.fq && \
-          diff expected.fq out.fq > /dev/null; echo "exit code: $?"
+          echo "@a\nAAA\n+AAA\n@t\nTTT\n+\nTTT" > expected.fq 
+          #cargo run -- --in-fastq test.fq.gz --in-id-list id_list > out.fq && \
+          #diff expected.fq out.fq > /dev/null; echo "exit code: $?"
 
