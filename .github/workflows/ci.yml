@@ -40,4 +40,10 @@ jobs:
         with:
           command: clippy
           args: --no-deps
+      
+      - name: func test
+        run: |
+          echo "@a\nAAA\n+AAA\n@c\nCCC\n+\nCCC\n@t\nTTT\n+\nTTT" | gzip > test.fq
+          echo "a\nt" > id_list
+          cargo run -- --in-fastq test.fq --in-id-list id_list
 
