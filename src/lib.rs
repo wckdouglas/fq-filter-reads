@@ -3,7 +3,7 @@ pub mod cli;
 use bio::io::fastq;
 use bio::io::fastq::Record;
 use flate2::read::GzDecoder;
-use log::{debug, info};
+use log::debug;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::BufRead;
@@ -173,6 +173,5 @@ pub fn get_list(id_file: &str) -> Result<HashSet<String>, String> {
         debug!("{}", id);
         id_set.insert(id);
     }
-    info!("Collected {} ids", id_set.len());
     Ok(id_set)
 }
