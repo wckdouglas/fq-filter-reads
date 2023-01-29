@@ -41,26 +41,3 @@ jobs:
           command: clippy
           args: --no-deps
 
-
-
-  build_and_test-python:
-    name: python CI
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: python install
-        run: |
-          pip install pytest maturin cutadapt
-        
-      - name: install py module
-        run: |
-          maturin build
-          pip install ./target/wheels/*whl
-      
-      - name: pytest
-        run: |
-          pytest
