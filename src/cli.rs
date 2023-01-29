@@ -12,7 +12,8 @@ pub struct Command {
     #[clap(long, value_parser)]
     pub in_id_list: String,
 
-    /// keeping the records with ids not in the given id list
+    /// only keep reads with ids NOT in the given id list
+    /// i.e. removing any records with id in the id list
     #[clap(long, action)]
     pub inverse: bool,
 }
