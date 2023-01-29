@@ -7,7 +7,7 @@ use log::info;
 fn run() -> Result<(), String> {
     let args = Command::parse();
     let id_set = get_list(&args.in_id_list)?;
-    let (read_count, out_count) = filter_fq(&args.in_fastq, &id_set)?;
+    let (read_count, out_count) = filter_fq(&args.in_fastq, &id_set, args.inverse)?;
     info!(
         "Read {} alignments; Written {} records",
         read_count, out_count

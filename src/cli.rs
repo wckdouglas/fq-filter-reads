@@ -11,4 +11,8 @@ pub struct Command {
     ///  input id list file, one per line
     #[clap(long, value_parser)]
     pub in_id_list: String,
+
+    /// keeping the records with ids not in the given id list
+    #[clap(long, action)]
+    pub inverse: bool,
 }

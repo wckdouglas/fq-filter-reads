@@ -14,6 +14,7 @@ use std::io::BufReader;
 /// # Arguments
 /// * `record` - a fastq record
 /// * `id_list` - hash table of id list
+/// * `inverse` - true if throw away reads with id in the id list, false otherwise
 ///
 /// # Return
 /// * 1 if the read is printed, 0 otherwise
@@ -43,14 +44,22 @@ use std::io::BufReader;
 /// hash.insert("a".to_string());
 /// hash.insert("t".to_string());
 ///
-/// assert_eq!(process_read(record1, &hash).unwrap(), 1);
-/// assert_eq!(process_read(record2, &hash).unwrap(), 0);
+/// assert_eq!(process_read(&record1, &hash, false).unwrap(), 1);
+/// assert_eq!(process_read(&record2, &hash, false).unwrap(), 0);
+///
+/// assert_eq!(process_read(&record1, &hash, true).unwrap(), 0);
+/// assert_eq!(process_read(&record2, &hash, true).unwrap(), 1);
 ///
 /// ```
-pub fn process_read(record: Record, id_list: &HashSet<String>) -> Result<u64, String> {
+pub fn process_read(
+    record: &Record,
+    id_list: &HashSet<String>,
+    inverse: bool,
+) -> Result<u64, String> {
     let mut out_count = 0;
     let seq_id: String = record.id().to_string();
-    if id_list.contains(&seq_id) {
+    let read_in_list: bool = id_list.contains(&seq_id);
+    if (read_in_list && !inverse) | (!read_in_list && inverse) {
         let record_string = record.to_string();
         let record_fmt = record_string
             .strip_suffix("\n")
@@ -94,11 +103,19 @@ pub fn process_read(record: Record, id_list: &HashSet<String>) -> Result<u64, St
 /// hash.insert("a".to_string());
 /// hash.insert("t".to_string());
 ///
-/// let (read_count, out_count) = filter_fq(tmp_fq, &hash).unwrap();
+/// let (read_count, out_count) = filter_fq(tmp_fq, &hash, false).unwrap();
 /// assert_eq!(read_count, 3);
 /// assert_eq!(out_count, 2);
+///
+/// let (read_count2, out_count2) = filter_fq(tmp_fq, &hash, true).unwrap();
+/// assert_eq!(read_count2, 3);
+/// assert_eq!(out_count2, 1);
 /// ```
-pub fn filter_fq(fastq_file: &str, id_list: &HashSet<String>) -> Result<(u64, u64), String> {
+pub fn filter_fq(
+    fastq_file: &str,
+    id_list: &HashSet<String>,
+    inverse: bool,
+) -> Result<(u64, u64), String> {
     let is_gz_input = fastq_file.ends_with(".gz");
     //let reader = fastq::Reader::from_file(fastq_file).map_err(|e| e.to_string())?;
     let mut read_count = 0;
@@ -113,7 +130,7 @@ pub fn filter_fq(fastq_file: &str, id_list: &HashSet<String>) -> Result<(u64, u6
 
         for result in reader.records() {
             let record = result.map_err(|e| e.to_string())?;
-            let oc = process_read(record, id_list)?;
+            let oc = process_read(&record, id_list, inverse)?;
             read_count += 1;
             out_count += oc
         }
