@@ -2,6 +2,7 @@
 name = "fq-filter-reads"
 version = "0.1.0"
 edition = "2021"
+description = "This is a simple program to filter a fastq file with a provided list of IDs."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
