@@ -51,7 +51,11 @@ pub fn process_read(record: Record, id_list: &HashSet<String>) -> Result<u64, St
     let mut out_count = 0;
     let seq_id: String = record.id().to_string();
     if id_list.contains(&seq_id) {
-        println!("{}", record);
+        let record_string = record.to_string();
+        let record_fmt = record_string
+            .strip_suffix("\n")
+            .ok_or_else(|| "Bad record")?;
+        println!("{}", record_fmt);
         out_count += 1;
     }
     Ok(out_count)
