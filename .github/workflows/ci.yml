@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: 
+      - 'main'
+  pull_request:
+    branches: 
+      - 'main'
+
+jobs:
+  build_and_test:
+    name: Rust CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      
+      - name: CI -- check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+
+      - name: CI -- fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --check
+
+      - name: CI -- test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args:  --locked
+          
+      - name: CI -- lint
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --no-deps
+
+
+
+  build_and_test-python:
+    name: python CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: python install
+        run: |
+          pip install pytest maturin cutadapt
+        
+      - name: install py module
+        run: |
+          maturin build
+          pip install ./target/wheels/*whl
+      
+      - name: pytest
+        run: |
+          pytest
