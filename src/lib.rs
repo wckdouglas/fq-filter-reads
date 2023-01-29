@@ -9,7 +9,45 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 
-fn process_read(record: Record, id_list: &HashSet<String>) -> Result<u64, String> {
+/// Print a read if read id in id list
+///
+/// # Arguments
+/// * `record` - a fastq record
+/// * `id_list` - hash table of id list
+///
+/// # Return
+/// * 1 if the read is printed, 0 otherwise
+///
+/// # Example
+/// ```
+/// use bio::io::fastq::Record;
+/// use std::collections::HashSet;
+/// use fq_filter_reads::process_read;
+///
+/// // mock record
+/// let record1 = Record::with_attrs(
+///     "a",
+///     None,
+///     b"AAA",
+///     b"AAA",
+/// );
+/// let record2 = Record::with_attrs(
+///     "b",
+///     None,
+///     b"AAA",
+///     b"AAA",
+/// );
+///
+/// // mock hash table
+/// let mut hash: HashSet<String> = HashSet::new();
+/// hash.insert("a".to_string());
+/// hash.insert("t".to_string());
+///
+/// assert_eq!(process_read(record1, &hash).unwrap(), 1);
+/// assert_eq!(process_read(record2, &hash).unwrap(), 0);
+///
+/// ```
+pub fn process_read(record: Record, id_list: &HashSet<String>) -> Result<u64, String> {
     let mut out_count = 0;
     let seq_id: String = record.id().to_string();
     if id_list.contains(&seq_id) {

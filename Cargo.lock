@@ -335,6 +335,7 @@ name = "fq-filter-reads"
 version = "0.1.0"
 dependencies = [
  "bio",
+ "bio-types",
  "clap",
  "env_logger",
  "flate2",
