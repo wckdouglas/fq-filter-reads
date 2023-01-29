@@ -1,12 +1,17 @@
 use clap::Parser;
 use fq_filter_reads::cli::Command;
 use fq_filter_reads::{filter_fq, get_list};
+use log::info;
 
 /// wrapper function to run the pipeline
 fn run() -> Result<(), String> {
     let args = Command::parse();
     let id_set = get_list(&args.in_id_list)?;
-    filter_fq(&args.in_fastq, &id_set)?;
+    let (read_count, out_count) = filter_fq(&args.in_fastq, &id_set)?;
+    info!(
+        "Read {} alignments; Written {} records",
+        read_count, out_count
+    );
     Ok(())
 }
 
@@ -15,6 +20,6 @@ fn main() {
     let result = run();
     match result {
         Ok(_) => (),
-        Err(err) => println!("{}", err),
+        Err(err) => info!("{}", err),
     };
 }

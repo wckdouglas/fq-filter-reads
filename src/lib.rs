@@ -19,7 +19,44 @@ fn process_read(record: Record, id_list: &HashSet<String>) -> Result<u64, String
     Ok(out_count)
 }
 
-pub fn filter_fq(fastq_file: &str, id_list: &HashSet<String>) -> Result<(), String> {
+/// Filter out reads with ID not in the given id list
+///
+/// # Arguments
+/// * `fastq_file` - file path to the fastq file for filtering
+/// * `id_list` - hash table storing the hashed read names that won't be filtered out
+///
+/// # Returns
+/// - tuple (total read count, number of reads retained)
+///
+/// # Example
+/// ```
+/// use std::collections::HashSet;
+/// use std::io::prelude::*;
+/// use std::fs::File;
+/// use flate2::GzBuilder;
+/// use flate2::Compression;
+/// use fq_filter_reads::filter_fq;
+///
+/// // mock data
+/// let tmp_fq = "/tmp/test.fq.gz";
+/// let f = File::create(tmp_fq).unwrap();
+/// let mut gz = GzBuilder::new()
+///     .filename("test.fq.gz")
+///     .comment("test file")
+///     .write(f, Compression::default());
+/// let data = b"@a\nAAA\n+\nAAA\n@c\nCCC\n+\nCCC\n@t\nTTT\n+\nTTT";
+/// gz.write_all(data).unwrap();
+/// gz.finish().unwrap();
+///
+/// let mut hash: HashSet<String> = HashSet::new();
+/// hash.insert("a".to_string());
+/// hash.insert("t".to_string());
+///
+/// let (read_count, out_count) = filter_fq(tmp_fq, &hash).unwrap();
+/// assert_eq!(read_count, 3);
+/// assert_eq!(out_count, 2);
+/// ```
+pub fn filter_fq(fastq_file: &str, id_list: &HashSet<String>) -> Result<(u64, u64), String> {
     let is_gz_input = fastq_file.ends_with(".gz");
     //let reader = fastq::Reader::from_file(fastq_file).map_err(|e| e.to_string())?;
     let mut read_count = 0;
@@ -42,11 +79,7 @@ pub fn filter_fq(fastq_file: &str, id_list: &HashSet<String>) -> Result<(), Stri
         return Err("Input must be gz fastq file".to_string());
     }
 
-    info!(
-        "Read {} alignments; Written {} records",
-        read_count, out_count
-    );
-    Ok(())
+    Ok((read_count, out_count))
 }
 
 /// Getting fastq record ID from a file
