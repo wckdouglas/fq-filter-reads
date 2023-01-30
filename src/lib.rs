@@ -180,7 +180,6 @@ mod tests {
     use super::*;
     use flate2::{Compression, GzBuilder};
     use rstest::*;
-    use std::fs::File;
     use std::io::prelude::*;
 
     fn mock_input(gz: bool) -> String {
