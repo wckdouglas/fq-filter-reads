@@ -8,6 +8,7 @@ use std::collections::HashSet;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
+use std::io::Read;
 
 /// Print a read if read id in id list
 ///
@@ -119,21 +120,19 @@ pub fn filter_fq(
     let mut read_count = 0;
     let mut out_count = 0;
 
-    if is_gz_input {
-        let reader = File::open(fastq_file)
-            .map(BufReader::new)
-            .map(GzDecoder::new)
-            .map(fastq::Reader::new)
-            .map_err(|e| e.to_string())?;
-
-        for result in reader.records() {
-            let record = result.map_err(|e| e.to_string())?;
-            let oc = process_read(&record, id_list, inverse)?;
-            read_count += 1;
-            out_count += oc
-        }
-    } else {
-        return Err("Input must be gz fastq file".to_string());
+    let file = File::open(fastq_file).map_err(|e| e.to_string())?;
+    // solution from:
+    // https://users.rust-lang.org/t/solved-optional-bufreader-gzdecoder-or-bufreader-file/24714/2
+    let buf: Box<dyn Read> = match is_gz_input {
+        true => Box::new(GzDecoder::new(file)),
+        false => Box::new(file),
+    };
+    let reader = fastq::Reader::new(buf);
+    for result in reader.records() {
+        let record = result.map_err(|e| e.to_string())?;
+        let oc = process_read(&record, id_list, inverse)?;
+        read_count += 1;
+        out_count += oc
     }
 
     Ok((read_count, out_count))
@@ -174,4 +173,52 @@ pub fn get_list(id_file: &str) -> Result<HashSet<String>, String> {
         id_set.insert(id);
     }
     Ok(id_set)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use flate2::{Compression, GzBuilder};
+    use rstest::*;
+    use std::io::prelude::*;
+
+    fn mock_input(gz: bool) -> String {
+        let data = b"@a\nAAA\n+\nAAA\n@c\nCCC\n+\nCCC\n@t\nTTT\n+\nTTT";
+        let mut tmp_fq = "/tmp/test.fq".to_string();
+        // mock data
+        if gz {
+            tmp_fq = format!("{tmp_fq}.gz");
+            let f = File::create(&tmp_fq).unwrap();
+            let mut gz = GzBuilder::new()
+                .filename("test.fq.gz")
+                .comment("test file")
+                .write(f, Compression::default());
+            gz.write_all(data).unwrap();
+            gz.finish().unwrap();
+        } else {
+            let mut file = File::create(&tmp_fq).unwrap();
+            file.write_all(data).unwrap();
+        }
+        tmp_fq
+    }
+
+    #[rstest]
+    #[case(true)]
+    #[case(false)]
+    fn test_filter_fq(#[case] gz: bool) {
+        let tmp_fq_string = mock_input(gz);
+        let tmp_fq = tmp_fq_string.as_str();
+
+        let mut hash: HashSet<String> = HashSet::new();
+        hash.insert("a".to_string());
+        hash.insert("t".to_string());
+
+        let (read_count, out_count) = filter_fq(&tmp_fq, &hash, false).unwrap();
+        assert_eq!(read_count, 3);
+        assert_eq!(out_count, 2);
+
+        let (read_count2, out_count2) = filter_fq(&tmp_fq, &hash, true).unwrap();
+        assert_eq!(read_count2, 3);
+        assert_eq!(out_count2, 1);
+    }
 }
