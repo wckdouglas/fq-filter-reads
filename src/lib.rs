@@ -62,7 +62,7 @@ pub fn process_read(
     if (read_in_list && !inverse) | (!read_in_list && inverse) {
         let record_string = record.to_string();
         let record_fmt = record_string.strip_suffix('\n').ok_or("Bad record")?;
-        println!("{}", record_fmt);
+        println!("{record_fmt}");
         out_count += 1;
     }
     Ok(out_count)
