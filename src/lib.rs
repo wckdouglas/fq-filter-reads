@@ -174,3 +174,52 @@ pub fn get_list(id_file: &str) -> Result<HashSet<String>, String> {
     }
     Ok(id_set)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use flate2::{Compression, GzBuilder};
+    use rstest::*;
+    use std::fs::File;
+    use std::io::prelude::*;
+
+    fn mock_input(gz: bool) -> String {
+        let data = b"@a\nAAA\n+\nAAA\n@c\nCCC\n+\nCCC\n@t\nTTT\n+\nTTT";
+        let mut tmp_fq = "/tmp/test.fq".to_string();
+        // mock data
+        if gz {
+            tmp_fq = format!("{tmp_fq}.gz");
+            let f = File::create(&tmp_fq).unwrap();
+            let mut gz = GzBuilder::new()
+                .filename("test.fq.gz")
+                .comment("test file")
+                .write(f, Compression::default());
+            gz.write_all(data).unwrap();
+            gz.finish().unwrap();
+        } else {
+            let mut file = File::create(&tmp_fq).unwrap();
+            file.write_all(data).unwrap();
+        }
+        tmp_fq
+    }
+
+    #[rstest]
+    #[case(true)]
+    #[case(false)]
+    fn test_filter_fq(#[case] gz: bool) {
+        let tmp_fq_string = mock_input(gz);
+        let tmp_fq = tmp_fq_string.as_str();
+
+        let mut hash: HashSet<String> = HashSet::new();
+        hash.insert("a".to_string());
+        hash.insert("t".to_string());
+
+        let (read_count, out_count) = filter_fq(&tmp_fq, &hash, false).unwrap();
+        assert_eq!(read_count, 3);
+        assert_eq!(out_count, 2);
+
+        let (read_count2, out_count2) = filter_fq(&tmp_fq, &hash, true).unwrap();
+        assert_eq!(read_count2, 3);
+        assert_eq!(out_count2, 1);
+    }
+}
