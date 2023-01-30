@@ -8,6 +8,7 @@ use std::collections::HashSet;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
+use std::io::Read;
 
 /// Print a read if read id in id list
 ///
@@ -119,21 +120,19 @@ pub fn filter_fq(
     let mut read_count = 0;
     let mut out_count = 0;
 
-    if is_gz_input {
-        let reader = File::open(fastq_file)
-            .map(BufReader::new)
-            .map(GzDecoder::new)
-            .map(fastq::Reader::new)
-            .map_err(|e| e.to_string())?;
-
-        for result in reader.records() {
-            let record = result.map_err(|e| e.to_string())?;
-            let oc = process_read(&record, id_list, inverse)?;
-            read_count += 1;
-            out_count += oc
-        }
-    } else {
-        return Err("Input must be gz fastq file".to_string());
+    let file = File::open(fastq_file).map_err(|e| e.to_string())?;
+    // solution from:
+    // https://users.rust-lang.org/t/solved-optional-bufreader-gzdecoder-or-bufreader-file/24714/2
+    let buf: Box<dyn Read> = match is_gz_input {
+        true => Box::new(GzDecoder::new(file)),
+        false => Box::new(file),
+    };
+    let reader = fastq::Reader::new(buf);
+    for result in reader.records() {
+        let record = result.map_err(|e| e.to_string())?;
+        let oc = process_read(&record, id_list, inverse)?;
+        read_count += 1;
+        out_count += oc
     }
 
     Ok((read_count, out_count))
