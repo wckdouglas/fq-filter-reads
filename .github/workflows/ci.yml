@@ -8,44 +8,82 @@ on:
     branches: 
       - 'main'
 
-concurrency:
-  group: ${{ github.ref }}
-  cancel-in-progress: true
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 
 jobs:
-  build_and_test:
+  build-and-test-rust:
     name: Rust CI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
-      
-      - name: CI -- check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
+          fetch-depth: 0
 
-      - name: CI -- fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --check
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: CI -- lint
+        run: |
+          cargo clippy --no-deps
+
+      - name: CI -- format
+        run: |
+          cargo fmt
 
       - name: CI -- test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args:  --locked
-          
-      - name: CI -- lint
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --no-deps
+        run: |
+          cargo test --locked
       
       - name: func test
         run: |
           bash test_script.sh
+  
+      - name: Get next version
+        id: get_next_version
+        uses: thenativeweb/get-next-version@main
+        with:
+          prefix: '' # 
+      
+      - name: Show version
+        run: |
+          echo Will release to ${{ steps.get_next_version.outputs.version }}
+
+
+  build-and-push-image:
+    needs: build-and-test-rust
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      pull-requests: write
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Get next version
+        id: get_next_version
+        uses: thenativeweb/get-next-version@main
+        with:
+          prefix: '' # optional, defaults to ''
+
+      - name: Cargo release
+        run: |
+          CARGO_PKG_VERSION=${{ steps.get_next_version.outputs.version }} 
+          sed 's/version = "0.0.0"/version = \"'"$CARGO_PKG_VERSION"'\"/' -i Cargo.toml
+          cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }} --allow-dirty
+  
+      - name: push tag
+        run: |
+          gh release create ${{ steps.get_next_version.outputs.version }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
