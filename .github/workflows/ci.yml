@@ -52,7 +52,7 @@ jobs:
           echo Will release to ${{ steps.get_next_version.outputs.version }}
 
 
-  build-and-push-image:
+  release:
     needs: build-and-test-rust
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
@@ -77,12 +77,14 @@ jobs:
           prefix: '' # optional, defaults to ''
 
       - name: Cargo release
+        if: steps.get_next_version.outputs.hasNextVersion == 'true'
         run: |
           CARGO_PKG_VERSION=${{ steps.get_next_version.outputs.version }} 
           sed 's/version = "0.0.0"/version = \"'"$CARGO_PKG_VERSION"'\"/' -i Cargo.toml
           cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }} --allow-dirty
   
       - name: push tag
+        if: steps.get_next_version.outputs.hasNextVersion == 'true'
         run: |
           gh release create ${{ steps.get_next_version.outputs.version }}
         env:
