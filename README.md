@@ -1,6 +1,6 @@
 # fq-filter-reads
 
-[![CI](https://github.com/wckdouglas/fq-filter-reads/actions/workflows/ci.yml/badge.svg)](https://github.com/wckdouglas/fq-filter-reads/actions/workflows/ci.yml)
+[![CI](https://github.com/wckdouglas/fq-filter-reads/actions/workflows/ci.yml/badge.svg)](https://github.com/wckdouglas/fq-filter-reads/actions/workflows/ci.yml)[![crates.io](https://img.shields.io/crates/v/fq-filter-reads.svg)](https://crates.io/crates/fq-filter-reads)
 
 This is a simple program to filter a fastq file with a provided list of IDs.
 
